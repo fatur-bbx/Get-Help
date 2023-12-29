@@ -57,7 +57,6 @@ class LocationMapActivity: ComponentActivity() {
         setContent {
             GetHelpTheme {
                 showMap()
-                Nav()
             }
         }
     }
