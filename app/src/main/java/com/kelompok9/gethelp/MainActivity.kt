@@ -1,9 +1,11 @@
 package com.kelompok9.gethelp
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.widget.GridLayout
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -59,21 +61,50 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
+import com.kelompok9.gethelp.db.db
 import com.kelompok9.gethelp.ui.theme.GetHelpTheme
+import android.util.Log
+import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
+import com.kelompok9.gethelp.ViewModel.AuthViewModel
+import com.kelompok9.gethelp.ViewModel.MainViewModel
+import com.kelompok9.gethelp.model.AuthModel
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+    private lateinit var  auth: FirebaseAuth;
+    val viewModel by viewModels<MainViewModel>()
+    fun redirectToLogin () {
+        intent = Intent(this, LoginActivity::class.java)
+        startActivity(intent)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        auth = Firebase.auth
+        viewModel.getUserData(auth = auth)
         setContent {
             GetHelpTheme {
-                Dashboard()
+                Dashboard(viewModel = viewModel)
             }
+        }
+    }
+    public override fun onStart() {
+        super.onStart()
+        // Check if user is signed in (non-null) and update UI accordingly.
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            redirectToLogin()
         }
     }
 }
 
 @Composable
-fun Dashboard(){
+fun Dashboard(viewModel: MainViewModel){
+    val authViewModel = viewModel.authModel
+
     Surface(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.bg),
@@ -82,10 +113,13 @@ fun Dashboard(){
         )
     }
     Column() {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically){
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically){
             Column(){
                 Text(
-                    text = "Halo, Lorem Ipsum",
+                    text = "Halo, "+ viewModel.authModel.value.name,
                     style = TextStyle(
                         fontSize = 16.sp,
                         fontWeight = FontWeight(700),
@@ -108,7 +142,9 @@ fun Dashboard(){
                 )
             }
         }
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 71.dp, horizontal = 20.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically){
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 71.dp, horizontal = 20.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically){
             Box(
                 modifier = Modifier
                     .width(267.dp)
@@ -167,17 +203,21 @@ fun Dashboard(){
                 }
             }
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.Center){
-            Column(Modifier
-                .shadow(
-                    elevation = 4.dp,
-                    spotColor = Color(0x40000000),
-                    ambientColor = Color(0x40000000)
-                )
-                .padding(1.dp)
-                .width(159.dp)
-                .height(142.dp)
-                .background(color = Color(0xFFFFFFFF)), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp), horizontalArrangement = Arrangement.Center){
+            Column(
+                Modifier
+                    .shadow(
+                        elevation = 4.dp,
+                        spotColor = Color(0x40000000),
+                        ambientColor = Color(0x40000000)
+                    )
+                    .padding(1.dp)
+                    .width(159.dp)
+                    .height(142.dp)
+                    .background(color = Color(0xFFFFFFFF)), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Jumlah Laporan",
                     style = TextStyle(
@@ -196,12 +236,17 @@ fun Dashboard(){
                     )
                 )
             }
-            Column(Modifier
-                .shadow(elevation = 4.dp, spotColor = Color(0x40000000), ambientColor = Color(0x40000000))
-                .padding(1.dp)
-                .width(159.dp)
-                .height(142.dp)
-                .background(color = Color(0xFFFFFFFF)), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                Modifier
+                    .shadow(
+                        elevation = 4.dp,
+                        spotColor = Color(0x40000000),
+                        ambientColor = Color(0x40000000)
+                    )
+                    .padding(1.dp)
+                    .width(159.dp)
+                    .height(142.dp)
+                    .background(color = Color(0xFFFFFFFF)), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "Jumlah Teman",
                     style = TextStyle(
@@ -221,11 +266,20 @@ fun Dashboard(){
                 )
             }
         }
-        Row(Modifier.fillMaxWidth().padding(vertical = 20.dp, horizontal = 20.dp), horizontalArrangement = Arrangement.Center){
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 20.dp, horizontal = 20.dp), horizontalArrangement = Arrangement.Center){
             Button(
-                onClick = { /* Handle button click here */ },
+                onClick = {
+
+                },
                 modifier = Modifier
-                    .shadow(elevation = 4.dp, spotColor = Color(0x40000000), ambientColor = Color(0x40000000))
+                    .shadow(
+                        elevation = 4.dp,
+                        spotColor = Color(0x40000000),
+                        ambientColor = Color(0x40000000)
+                    )
                     .padding(1.dp)
                     .width(324.dp)
                     .height(70.dp)
@@ -281,13 +335,5 @@ fun Dashboard(){
                 contentScale = ContentScale.None
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun BgPreview() {
-    GetHelpTheme {
-        Dashboard()
     }
 }

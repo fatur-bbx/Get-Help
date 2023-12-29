@@ -47,10 +47,7 @@ class FriendListActivity:ComponentActivity() {
             GetHelpTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Bg(modifier = Modifier
-                        .padding(1.dp)
-                        .width(45.dp)
-                        .height(45.dp))
+
                 }
                 Column (modifier = Modifier
                     .fillMaxWidth()
