@@ -18,7 +18,7 @@ class MainViewModel: ViewModel() {
             .addOnSuccessListener { documents ->
                 for(document in documents) {
                     if (document != null) {
-                        Log.d("MainActivityTag", "DocumentSnapshot data: ${document.data.get("user_name")}")
+                        Log.d("MainActivityTag", "DocumentSnapshot data: ${document.data.get("user_email")}")
                         authModel.value = authModel.value.copy(name = document.data.get("user_name").toString())
                         authModel.value = authModel.value.copy(email = document.data.get("user_email").toString())
                         authModel.value = authModel.value.copy(inviteCode = document.data.get("user_invite_code").toString())

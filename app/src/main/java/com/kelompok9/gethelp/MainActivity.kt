@@ -2,6 +2,11 @@ package com.kelompok9.gethelp
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.widget.GridLayout
@@ -69,20 +74,45 @@ import com.kelompok9.gethelp.ui.theme.GetHelpTheme
 import android.util.Log
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
 import com.kelompok9.gethelp.ViewModel.AuthViewModel
 import com.kelompok9.gethelp.ViewModel.MainViewModel
+import com.kelompok9.gethelp.api.LocationApi
+import com.kelompok9.gethelp.api.LocationData
+import com.kelompok9.gethelp.api.LocationResult
 import com.kelompok9.gethelp.model.AuthModel
 import kotlinx.coroutines.delay
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private lateinit var  auth: FirebaseAuth;
     val viewModel by viewModels<MainViewModel>()
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationManager: LocationManager
     fun redirectToLogin () {
         intent = Intent(this, LoginActivity::class.java)
         startActivity(intent)
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        getLocation({
+            lat: String, long: String ->
+            getKelurahan("0.472937", "101.5209802", {
+                kelurahan ->  getLocationStatus(kelurahan, 1)
+            })
+        })
         auth = Firebase.auth
         viewModel.getUserData(auth = auth)
         setContent {
@@ -99,11 +129,74 @@ class MainActivity : ComponentActivity() {
             redirectToLogin()
         }
     }
+
+    private fun getLocationStatus(wardName: String, crimeCount: Int) {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://128.199.226.237")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val api = retrofit.create(LocationApi::class.java)
+        val locationData = LocationData(wardName = wardName, crimeCount = crimeCount)
+        val call = api.getLocationCluster(locationData);
+
+        call!!.enqueue(object: Callback<LocationResult?> {
+            override fun onResponse(call: Call<LocationResult?>, response: Response<LocationResult?>) {
+                if(response.isSuccessful) {
+                    Log.d("MainTag", "success!" + response.body()?.cluster)
+                }
+            }
+
+            override fun onFailure(call: Call<LocationResult?>, t: Throwable) {
+                Log.e("MainTag", "Failed mate " + t.message.toString())
+            }
+        })
+    }
+
+    private fun getLocation(callback: (lat: String, long: String) -> Unit){
+        var lat = "";
+        var long = "";
+        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+        if ((ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 2)
+        }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , 5000, 5f, LocationListener {
+            location -> lat = location.latitude.toString()
+            long = location.longitude.toString()
+            callback(lat, long)
+        })
+    }
+
+    private fun getKelurahan(lat: String, long: String, callback: (kelurahan: String) -> Unit) {
+        val geocoder = Geocoder(baseContext, Locale.getDefault())
+        var kelurahan = ""
+        val address = geocoder.getFromLocation(lat.toDouble(), long.toDouble(), 1, {
+            it.forEach({
+                address ->  kelurahan = address.subLocality
+            })
+            callback(kelurahan)
+        })
+    }
+
+    fun onLocationChanged(location: Location) {
+        Log.d("MainActivityLocation", "hello")
+    }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 2) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+            }
+            else {
+                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
 }
 
 @Composable
 fun Dashboard(viewModel: MainViewModel){
-    val authViewModel = viewModel.authModel
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Image(
