@@ -4,7 +4,10 @@ import android.graphics.drawable.Icon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -34,6 +38,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -47,21 +53,32 @@ class LocationActivity: ComponentActivity() {
         setContent {
             GetHelpTheme {
                 // A surface container using the 'background' color from the theme
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-
+                Box() {
+                    Image(
+                        modifier = Modifier.fillMaxSize(),
+                        painter = painterResource(id = R.drawable.bg),
+                        contentDescription = "image description",
+                        contentScale = ContentScale.FillBounds
+                    )
+                    Scaffold(Modifier.background(color = Color.Transparent), bottomBar = {
+                        bottomBar(page = 1)
+                    }) {
+                            innerPadding->
+                        Box(Modifier.padding(innerPadding)){
+                            Column (modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight()
+                                .padding(24.dp),
+                                verticalArrangement = Arrangement.Top
+                            ) {
+                                SearchBar(label = "Enter location to search")
+                                LocationCard(location = "Pekanbaru, Kulim", status = "Medium", case = 10)
+                                LocationCard(location = "Pekanbaru, Kulim", status = "Medium", case = 10)
+                                LocationCard(location = "Pekanbaru, Kulim", status = "Medium", case = 10)
+                            }
+                        }
+                    }
                 }
-                Column (modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(24.dp),
-                    verticalArrangement = Arrangement.Top
-                ) {
-                    SearchBar(label = "Enter location to search")
-                    LocationCard(location = "Pekanbaru, Kulim", status = "Medium", case = 10)
-                    LocationCard(location = "Pekanbaru, Kulim", status = "Medium", case = 10)
-                    LocationCard(location = "Pekanbaru, Kulim", status = "Medium", case = 10)
-                }
-
             }
         }
     }
@@ -96,8 +113,9 @@ fun SearchBar(label: String) {
 fun LocationCard(location: String, status: String, case: Int) {
 
     Card(
-        modifier = Modifier.fillMaxWidth()
-            .padding(top=10.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp)
             .shadow(elevation = 10.dp, shape = RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.Red)
     ) {
@@ -111,7 +129,8 @@ fun LocationCard(location: String, status: String, case: Int) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(vertical = 24.dp)
             ) {
                 Text(text = status, color = Color.White , fontWeight = FontWeight.Bold)

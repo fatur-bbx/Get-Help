@@ -24,7 +24,7 @@
 <!--            android:exported="false"-->
 <!--            android:label="@string/title_activity_login" />-->
         <activity
-            android:name=".RegisterActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.GetHelp">
@@ -34,9 +34,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity"
+        <activity android:name=".RegisterActivity"
             android:theme="@style/Theme.GetHelp"></activity>
         <activity android:name=".LoginActivity"
+            android:theme="@style/Theme.GetHelp"></activity>
+        <activity android:name=".LocationActivity"
+            android:theme="@style/Theme.GetHelp"></activity>
+        <activity android:name=".LocationMapActivity"
+            android:theme="@style/Theme.GetHelp"></activity>
+        <activity android:name=".FriendListActivity"
+            android:theme="@style/Theme.GetHelp"></activity>
+        <activity android:name=".ReportActivity"
             android:theme="@style/Theme.GetHelp"></activity>
     </application>
 
