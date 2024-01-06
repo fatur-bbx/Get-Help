@@ -8,7 +8,6 @@ import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.AggregateSource
 import com.kelompok9.gethelp.LoginActivity
 import com.kelompok9.gethelp.api.LocationApi
 import com.kelompok9.gethelp.api.LocationData
@@ -21,10 +20,8 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.text.SimpleDateFormat
-import java.time.LocalDate
 
-class MainViewModel: ViewModel() {
+class LocationViewModel: ViewModel() {
     var authModel = mutableStateOf(AuthModel())
         private set
     var locationModel = mutableStateOf(LocationModel())
@@ -55,48 +52,34 @@ class MainViewModel: ViewModel() {
         auth.signOut();
     }
 
-    fun getLocationStatus(wardName: String) {
-        var date = SimpleDateFormat("dd-MM-yyyy").parse(LocalDate.now().minusDays(30).toString()).time;
-        Log.d("mainTag", date.toString())
-        db().db.collection("Report").whereGreaterThanOrEqualTo("tanggal", date).count().get(AggregateSource.SERVER).addOnCompleteListener() {
-            task->if(task.isSuccessful) {
-                // Count fetched successfully
-                val snapshot = task.result
-                Log.d("mainTag", "Count: ${snapshot.count}")
-            val retrofit = Retrofit.Builder()
-                .baseUrl("http://128.199.226.237")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+    fun getLocationStatus(wardName: String, crimeCount: Int) {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://128.199.226.237")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
-            val api = retrofit.create(LocationApi::class.java)
-            val locationData = LocationData(wardName = wardName, crimeCount = snapshot.count.toInt())
-            val call = api.getLocationCluster(locationData);
+        val api = retrofit.create(LocationApi::class.java)
+        val locationData = LocationData(wardName = wardName, crimeCount = crimeCount)
+        val call = api.getLocationCluster(locationData);
 
-            call!!.enqueue(object: Callback<LocationResult?> {
-                override fun onResponse(call: Call<LocationResult?>, response: Response<LocationResult?>) {
-                    if(response.isSuccessful) {
+        call!!.enqueue(object: Callback<LocationResult?> {
+            override fun onResponse(call: Call<LocationResult?>, response: Response<LocationResult?>) {
+                if(response.isSuccessful) {
 
-                        if(response.body()?.cluster != null){
-                            var status = response.body()?.cluster.toString()
-                            locationModel.value = locationModel.value.copy(status = status.toInt())
-                            locationModel.value = locationModel.value.copy(crimeCount = snapshot.count.toInt())
-                            locationModel.value.getLocationStatus()
-                            Log.d("MainTag", "success!" + locationModel.value.statusColor)
-                        }
-
+                    if(response.body()?.cluster != null){
+                        var status = response.body()?.cluster.toString()
+                        locationModel.value = locationModel.value.copy(status = status.toInt())
+                        locationModel.value.getLocationStatus()
+                        Log.d("MainTag", "success!" + locationModel.value.statusColor)
                     }
-                }
 
-                override fun onFailure(call: Call<LocationResult?>, t: Throwable) {
-                    Log.e("MainTag", "Failed mate " + t.message.toString())
                 }
-            })
-            } else {
-                Log.d("mainTag", "Count failed: ", task.getException())
             }
-        }
 
-
+            override fun onFailure(call: Call<LocationResult?>, t: Throwable) {
+                Log.e("MainTag", "Failed mate " + t.message.toString())
+            }
+        })
     }
 
 }
