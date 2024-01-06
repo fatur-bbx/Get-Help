@@ -1,19 +1,21 @@
 package com.kelompok9.gethelp
 
-import android.graphics.drawable.Icon
+import android.content.ContentValues
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
+import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -22,33 +24,45 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.currentCompositionLocalContext
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.kelompok9.gethelp.ViewModel.AuthViewModel
+import com.kelompok9.gethelp.db.db
+import com.kelompok9.gethelp.helper.AuthHelper
 import com.kelompok9.gethelp.ui.theme.GetHelpTheme
-
 class LoginActivity : ComponentActivity(){
+    private lateinit var  auth: FirebaseAuth;
+    val viewModel by viewModels<AuthViewModel>()
+
+    private fun toRegister() {
+        val intent = Intent(this, RegisterActivity::class.java)
+        startActivity(intent)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        auth = Firebase.auth
         setContent {
             GetHelpTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Bg(modifier = Modifier
-                        .padding(1.dp)
-                        .width(45.dp)
-                        .height(45.dp))
+
                 }
                 Column (modifier = Modifier
                     .fillMaxWidth()
@@ -62,14 +76,18 @@ class LoginActivity : ComponentActivity(){
                         fontWeight = FontWeight.Bold,
                         fontSize = 26.sp,
                         text = "Sign In")
-                    CustomTextField(label = "Email")
-                    CustomTextField(label = "Password")
-                    CustomButton(label = "Sign In")
+                    CustomTextField(value = viewModel.authModel.value.email ,label = "Email", onNewValue = ::onEmailChange)
+                    CustomTextField(value = viewModel.authModel.value.password, label = "Password", onNewValue = ::onPasswordChange)
+                    CustomButton(label = "Sign In", onClick = fun(){
+                        signIn()
+                    })
                     Text(
-
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 10.dp),
+                            .padding(vertical = 10.dp)
+                            .clickable {
+                                toRegister()
+                            },
                         textAlign = TextAlign.Right,
                         text = "Not register yet?")
                 }
@@ -77,25 +95,70 @@ class LoginActivity : ComponentActivity(){
             }
         }
     }
+
+    public override fun onStart() {
+        super.onStart()
+        // Check if user is signed in (non-null) and update UI accordingly.
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            redirectToHome()
+        }
+    }
+    fun redirectToHome () {
+        intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+    }
+    fun onEmailChange(newValue: String) {
+        viewModel.authModel.value = viewModel.authModel.value.copy(email = newValue)
+        Log.d("hehe","hehehe")
+    }
+    fun onPasswordChange(newValue: String) {
+        viewModel.authModel.value = viewModel.authModel.value.copy(password = newValue)
+    }
+
+    private fun signIn() {
+        val email = viewModel.authModel.value.email
+        val password = viewModel.authModel.value.password
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // Sign in success, update UI with the signed-in user's information
+                    Log.d(ContentValues.TAG, "createUserWithEmail:success")
+                    val user = auth.currentUser?.email;
+                    Toast.makeText(
+                        baseContext,
+                        user,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    val intent = Intent(this, MainActivity::class.java)
+                    startActivity(intent)
+                } else {
+                    // If sign in fails, display a message to the user.
+                    Log.w(ContentValues.TAG, "createUserWithEmail:failure", task.exception)
+                    Toast.makeText(
+                        baseContext,
+                        "Authentication failed.",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
+    }
 }
 @Composable
-fun CustomTextField(label: String) {
-    var text = remember { mutableStateOf(TextFieldValue()) }
-
+fun CustomTextField(value: String, label: String, onNewValue: (String)-> Unit) {
     Column (modifier = Modifier
         .fillMaxWidth()
         .padding(vertical = 10.dp)) {
         Text(text = label)
         TextField(
-            value = text.value,
-            onValueChange = { text.value = it },
+            value = value,
+            onValueChange = { onNewValue(it) },
             label = { Text(label) },
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(elevation = 10.dp, shape = RoundedCornerShape(20.dp)),
             colors = TextFieldDefaults.textFieldColors(
                 containerColor = Color.White,
-                textColor = Color.Gray,
                 disabledTextColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
@@ -106,9 +169,9 @@ fun CustomTextField(label: String) {
 }
 
 @Composable
-fun CustomButton(label: String){
+fun CustomButton(label: String, onClick: ()->Unit){
     Box(modifier = Modifier.fillMaxWidth()){
-        Button(onClick = { /*TODO*/ },
+        Button(onClick = { onClick() },
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
